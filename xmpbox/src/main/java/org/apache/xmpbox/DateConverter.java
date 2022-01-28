@@ -24,6 +24,8 @@ package org.apache.xmpbox;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -307,6 +309,7 @@ public final class DateConverter
      */
     private static Calendar fromISO8601(String dateString)
     {
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSS][XXX][zzz]");
         // Pattern to test for a time zone string
         Pattern timeZonePattern = Pattern.compile(
                     "[\\d-]*T?[\\d-\\.]([A-Z]{1,4})$|(.*\\d*)([A-Z][a-z]+\\/[A-Z][a-z]+)$"
@@ -328,15 +331,16 @@ public final class DateConverter
 
         if (timeZoneString != null)
         {
-            
-            Calendar cal = javax.xml.bind.DatatypeConverter.parseDateTime(
-                        dateString.substring(0, dateString.indexOf(timeZoneString))
-                    );
-            
-            TimeZone z = TimeZone.getTimeZone(timeZoneString);
-            cal.setTimeZone(z);
-            
-            return cal;
+            // can't use parseDateTime immediately, first do handling for time that has no seconds
+            int teeIndex = dateString.indexOf('T');
+            int tzIndex = dateString.indexOf(timeZoneString);
+            String toParse = dateString.substring(0, tzIndex);
+            if (tzIndex - teeIndex == 6)
+            {
+                toParse = dateString.substring(0, tzIndex) + ":00";
+            }
+            ZonedDateTime zonedDateTime = ZonedDateTime.parse(toParse + timeZoneString, dateTimeFormatter);
+            return GregorianCalendar.from(zonedDateTime);
         }
         else
         {
