@@ -21,6 +21,7 @@
 
 package org.apache.pdfbox.preflight.parser;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -28,27 +29,48 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.activation.DataSource;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.pdfbox.preflight.PreflightDocument;
+import org.apache.pdfbox.preflight.Format;
 import org.apache.pdfbox.preflight.ValidationResult;
 import org.apache.pdfbox.preflight.ValidationResult.ValidationError;
-import org.apache.pdfbox.preflight.exception.SyntaxValidationException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 public class XmlResultParser
 {
+    /**
+     * Validate the given file.
+     *
+     * @param file the file to be validated
+     * @return the validation results as XML
+     * @throws IOException if something went wrong
+     */
+    public Element validate(File file) throws IOException
+    {
+        return validate(file, file.getName());
+    }
 
+    /**
+     * Validate the given file. Add the validation results to the given XML tree.
+     *
+     * @param rdocument XML based validation results of a former run
+     * @param file the file to be validated
+     * @return the validation results as XML
+     * @throws IOException if something went wrong
+     */
+    public Element validate(Document rdocument, File file) throws IOException
+    {
+        return validate(rdocument, file, file.getName());
+    }
 
-    public Element validate(DataSource source) throws IOException
+    private Element validate(File file, String name) throws IOException
     {
         try
         {
             Document rdocument = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
-            return validate(rdocument,source);
+            return validate(rdocument, file, name);
         }
         catch (ParserConfigurationException e)
         {
@@ -57,38 +79,26 @@ public class XmlResultParser
     }
 
 
-    public Element validate(Document rdocument, DataSource source) throws IOException
+    private Element validate(Document rdocument, File file, String name)
+            throws IOException
     {
-        String pdfType = null;
+        String pdfType = Format.PDF_A1B.getFname();
         ValidationResult result;
         long before = System.currentTimeMillis();
         try
         {
-            PreflightParser parser = new PreflightParser(source);
-            try
-            {
-                parser.parse();
-                PreflightDocument document = parser.getPreflightDocument();
-                document.validate();
-                pdfType = document.getSpecification().getFname();
-                result = document.getResult();
-                document.close();
-            }
-            catch (SyntaxValidationException e)
-            {
-                result = e.getResult();
-            }
-        } 
-        catch(Exception e) 
+            result = PreflightParser.validate(file);
+        }
+        catch(Exception e)
         {
             long after = System.currentTimeMillis();
-            return generateFailureResponse(rdocument, source.getName(), after-before, pdfType, e);
+            return generateFailureResponse(rdocument, name, after-before, pdfType, e);
         }
 
         long after = System.currentTimeMillis();
         if (result.isValid())
         {
-            Element preflight = generateResponseSkeleton(rdocument, source.getName(), after-before);
+            Element preflight = generateResponseSkeleton(rdocument, name, after-before);
             // valid ?
             Element valid = rdocument.createElement("isValid");
             valid.setAttribute("type", pdfType);
@@ -98,7 +108,7 @@ public class XmlResultParser
         }
         else
         {
-            Element preflight = generateResponseSkeleton(rdocument, source.getName(), after-before);
+            Element preflight = generateResponseSkeleton(rdocument, name, after-before);
             // valid ?
             createResponseWithError(rdocument, pdfType, result, preflight);
             return preflight;

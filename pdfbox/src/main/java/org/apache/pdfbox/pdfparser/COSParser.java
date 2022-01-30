@@ -20,6 +20,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.*;
 import org.apache.pdfbox.pdfparser.XrefTrailerResolver.XRefType;
+import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
+import org.apache.pdfbox.pdmodel.encryption.PDEncryption;
 import org.apache.pdfbox.pdmodel.encryption.SecurityHandler;
 
 import java.io.IOException;
@@ -58,6 +60,8 @@ public class COSParser extends BaseParser
     
     private static final int X = 'x';
 
+    private AccessPermission accessPermission;
+
     private static final int STRMBUFLEN = 2048;
     private final byte[] strmBuf    = new byte[ STRMBUFLEN ];
 
@@ -93,6 +97,7 @@ public class COSParser extends BaseParser
 	private final int LINEARIZATION_SIZE = 1024;
 
 	private long trailerOffset;
+    private PDEncryption encryption = null;
 
     /**
      * file length.
@@ -2352,5 +2357,32 @@ public class COSParser extends BaseParser
 			}
         }
         return null;
+    }
+
+    /**
+     * This will get the encryption dictionary. The document must be parsed before this is called.
+     *
+     * @return The encryption dictionary of the document that was parsed.
+     *
+     * @throws IOException If there is an error getting the document.
+     */
+    public PDEncryption getEncryption() throws IOException
+    {
+        if (document == null)
+        {
+            throw new IOException(
+                    "You must parse the document first before calling getEncryption()");
+        }
+        return encryption;
+    }
+
+    public AccessPermission getAccessPermission() throws IOException
+    {
+        if (document == null)
+        {
+            throw new IOException(
+                    "You must parse the document first before calling getAccessPermission()");
+        }
+        return accessPermission;
     }
 }

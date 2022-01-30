@@ -52,9 +52,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.activation.DataSource;
-import javax.activation.FileDataSource;
-
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -67,7 +64,7 @@ import org.apache.pdfbox.cos.COSObject;
 import org.apache.pdfbox.cos.COSObjectKey;
 import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.cos.COSString;
-import org.apache.pdfbox.io.RandomAccessBufferedFileInputStream;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdfparser.PDFObjectStreamParser;
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdfparser.XrefTrailerResolver.XRefType;
@@ -89,7 +86,9 @@ public class PreflightParser extends PDFParser
      */
     public static final Charset encoding = Charset.forName("ISO-8859-1");
 
-    protected DataSource originalDocument;
+    private Format format = null;
+
+    private PreflightConfiguration config = null;
 
     protected ValidationResult validationResult;
 
@@ -97,26 +96,21 @@ public class PreflightParser extends PDFParser
 
     protected PreflightContext ctx;
 
+    /**
+     * Constructor.
+     *
+     * @param file
+     * @throws IOException if there is a reading error.
+     */
     public PreflightParser(File file) throws IOException
     {
-        // TODO move file handling outside of the parser
-        super(new RandomAccessBufferedFileInputStream(file));
-        this.setLenient(false);
-        this.originalDocument = new FileDataSource(file);
+        super(new RandomAccessReadBufferedFile(file));
     }
 
     public PreflightParser(String filename) throws IOException
     {
         // TODO move file handling outside of the parser
         this(new File(filename));
-    }
-
-    public PreflightParser(DataSource input) throws IOException
-    {
-        // TODO move file handling outside of the parser
-        super(new RandomAccessBufferedFileInputStream(input.getInputStream()));
-        this.setLenient(false);
-        this.originalDocument = input;
     }
 
     /**
@@ -155,9 +149,9 @@ public class PreflightParser extends PDFParser
     }
 
     @Override
-    public void parse() throws IOException
+    public PDDocument parse() throws IOException
     {
-        parse(Format.PDF_A1B);
+        return parse(Format.PDF_A1B);
     }
 
     /**
@@ -167,9 +161,9 @@ public class PreflightParser extends PDFParser
      *            format that the document should follow (default {@link Format#PDF_A1B})
      * @throws IOException
      */
-    public void parse(Format format) throws IOException
+    public PDDocument parse(Format format) throws IOException
     {
-        parse(format, null);
+        return parse(format, null);
     }
 
     /**
@@ -182,38 +176,37 @@ public class PreflightParser extends PDFParser
      *            the default configuration.
      * @throws IOException
      */
-    public void parse(Format format, PreflightConfiguration config) throws IOException
+    public PDDocument parse(Format format, PreflightConfiguration config) throws IOException
     {
+        this.format = format == null ? Format.PDF_A1B : format;
+        this.config = config;
+        validationResult = new ValidationResult(true);
+        PDDocument pdDocument = null;
         checkPdfHeader();
         try
         {
-            super.parse();
+            // disable leniency
+            pdDocument = super.parse(false);
         }
         catch (IOException e)
         {
             addValidationError(new ValidationError(PreflightConstants.ERROR_SYNTAX_COMMON, e.getMessage()));
-            throw new SyntaxValidationException(e, this.validationResult);
+            throw new SyntaxValidationException(e, validationResult);
         }
-        Format formatToUse = (format == null ? Format.PDF_A1B : format);
-        createPdfADocument(formatToUse, config);
-        createContext();
+        // create context
+        PreflightContext context = new PreflightContext();
+        context.setDocument(preflightDocument);
+        preflightDocument.setContext(context);
+        context.setXrefTrailerResolver(xrefTrailerResolver);
+        context.setFileLen(fileLen);
+        preflightDocument.addValidationErrors(validationResult.getErrorsList());
+        return pdDocument;
     }
 
     protected void createPdfADocument(Format format, PreflightConfiguration config) throws IOException
     {
         COSDocument cosDocument = getDocument();
         this.preflightDocument = new PreflightDocument(cosDocument, format, config);
-    }
-
-    /**
-     * Create a validation context. This context is set to the PreflightDocument.
-     */
-    protected void createContext()
-    {
-        this.ctx = new PreflightContext(this.originalDocument);
-        ctx.setDocument(preflightDocument);
-        preflightDocument.setContext(ctx);
-        ctx.setXrefTrailerResolver(xrefTrailerResolver);
     }
 
     @Override
@@ -857,5 +850,28 @@ public class PreflightParser extends PDFParser
             }
         }
         return offset;
+    }
+
+    /**
+     * Load and validate the given file. Returns the validation result and closes the read pdf.
+     *
+     * @param file thew file to be read and validated
+     * @return the validation result
+     * @throws IOException in case of a file reading or parsing error
+     */
+    public static ValidationResult validate(File file) throws IOException
+    {
+        ValidationResult result;
+        PreflightParser parser = new PreflightParser(file);
+        try
+        {
+            PreflightDocument document = (PreflightDocument) parser.parse();
+            result = document.validate();
+        }
+        catch (SyntaxValidationException e)
+        {
+            result = e.getResult();
+        }
+        return result;
     }
 }

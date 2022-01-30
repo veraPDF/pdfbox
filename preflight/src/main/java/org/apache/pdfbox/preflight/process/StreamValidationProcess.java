@@ -80,8 +80,6 @@ public class StreamValidationProcess extends AbstractProcess
         // ---- Only the Length entry is mandatory
         // ---- In a PDF/A file, F, FFilter and FDecodeParms are forbidden
         checkDictionaryEntries(context, streamObj);
-        // ---- check stream length
-        checkStreamLength(context, cObj);
         // ---- Check the Filter value(s)
         checkFilters(streamObj, context);
     }
@@ -197,128 +195,6 @@ public class StreamValidationProcess extends AbstractProcess
             }
         } while (search);
         return false;
-    }
-
-    protected void checkStreamLength(PreflightContext context, COSObject cObj) throws ValidationException
-    {
-        COSStream streamObj = (COSStream) cObj.getObject();
-        int length = streamObj.getInt(COSName.LENGTH);
-        InputStream ra = null;
-        try
-        {
-            ra = context.getSource().getInputStream();
-            Long offset = context.getDocument().getDocument().getXrefTable().get(new COSObjectKey(cObj));
-
-            // ---- go to the beginning of the object
-            long skipped = 0;
-            if (offset != null)
-            {
-                while (skipped != offset)
-                {
-                    long curSkip = ra.skip(offset - skipped);
-                    if (curSkip < 0)
-                    {
-                        closeQuietly(ra);
-                        addValidationError(context, new ValidationError(ERROR_SYNTAX_STREAM_DAMAGED, "Unable to skip bytes in the PDFFile to check stream length"));
-                        return;
-                    }
-                    skipped += curSkip;
-                }
-
-                // ---- go to the stream key word
-                if (readUntilStream(ra))
-                {
-                    int c = ra.read();
-                    if (c == '\r')
-                    {
-                        ra.read();
-                    } // else c is '\n' no more character to read
-
-                    // ---- Here is the true beginning of the Stream Content.
-                    // ---- Read the given length of bytes and check the 10 next bytes
-                    // ---- to see if there are endstream.
-                    byte[] buffer = new byte[1024];
-                    int nbBytesToRead = length;
-
-                    do
-                    {
-                        int cr;
-                        if (nbBytesToRead > 1024)
-                        {
-                            cr = ra.read(buffer, 0, 1024);
-                        }
-                        else
-                        {
-                            cr = ra.read(buffer, 0, nbBytesToRead);
-                        }
-                        if (cr == -1)
-                        {
-                            addStreamLengthValidationError(context, cObj, length, "");
-                            closeQuietly(ra);
-                            return;
-                        }
-                        else
-                        {
-                            nbBytesToRead = nbBytesToRead - cr;
-                        }
-                    } while (nbBytesToRead > 0);
-
-                    int len = "endstream".length() + 2;
-                    byte[] buffer2 = new byte[len];
-                    for (int i = 0; i < len; ++i)
-                    {
-                        buffer2[i] = (byte) ra.read();
-                    }
-
-                    // ---- check the content of 10 last characters
-                    String endStream = new String(buffer2, Charsets.ISO_8859_1);
-                    if (buffer2[0] == '\r' && buffer2[1] == '\n')
-                    {
-                        if (!endStream.contains("endstream"))
-                        {
-                            addStreamLengthValidationError(context, cObj, length, endStream);
-                        }
-                    }
-                    else if (buffer2[0] == '\r' && buffer2[1] == 'e')
-                    {
-                        if (!endStream.contains("endstream"))
-                        {
-                            addStreamLengthValidationError(context, cObj, length, endStream);
-                        }
-                    }
-                    else if (buffer2[0] == '\n' && buffer2[1] == 'e')
-                    {
-                        if (!endStream.contains("endstream"))
-                        {
-                            addStreamLengthValidationError(context, cObj, length, endStream);
-                        }
-                    }
-                    else
-                    {
-                        if (!endStream.startsWith("endStream"))
-                        {
-                             addStreamLengthValidationError(context, cObj, length, endStream);
-                        }
-                    }
-
-                }
-                else
-                {
-                    addStreamLengthValidationError(context, cObj, length, "");
-                }
-            }
-        }
-        catch (IOException e)
-        {
-            throw new ValidationException("Unable to read a stream to validate: " + e.getMessage(), e);
-        }
-        finally
-        {
-            if (ra != null)
-            {
-                IOUtils.closeQuietly(ra);
-            }
-        }
     }
 
     /**

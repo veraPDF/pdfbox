@@ -344,7 +344,28 @@ public final class DateConverter
         }
         else
         {
-            return javax.xml.bind.DatatypeConverter.parseDateTime(dateString);
-        }
+            // can't use parseDateTime immediately, first do handling for time that has no seconds
+            int teeIndex = dateString.indexOf('T');
+            if (teeIndex == -1)
+            {
+                ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateString, dateTimeFormatter);
+                return GregorianCalendar.from(zonedDateTime);
+            }
+            int plusIndex = dateString.indexOf('+', teeIndex + 1);
+            int minusIndex = dateString.indexOf('-', teeIndex + 1);
+            if (plusIndex == -1 && minusIndex == -1)
+            {
+                ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateString, dateTimeFormatter);
+                return GregorianCalendar.from(zonedDateTime);
+            }
+            plusIndex = Math.max(plusIndex, minusIndex);
+            if (plusIndex - teeIndex == 6)
+            {
+                String toParse = dateString.substring(0, plusIndex) + ":00" + dateString.substring(plusIndex);
+                ZonedDateTime zonedDateTime = ZonedDateTime.parse(toParse, dateTimeFormatter);
+                return GregorianCalendar.from(zonedDateTime);
+            }
+            ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateString, dateTimeFormatter);
+            return GregorianCalendar.from(zonedDateTime);        }
     }
 }
