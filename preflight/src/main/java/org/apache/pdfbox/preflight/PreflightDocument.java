@@ -23,6 +23,7 @@ package org.apache.pdfbox.preflight;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.pdfbox.cos.COSDocument;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -154,13 +155,27 @@ public class PreflightDocument extends PDDocument
      * 
      * @throws ValidationException
      */
-    public void validate() throws ValidationException
+    public ValidationResult validate() throws ValidationException
     {
         context.setConfig(config);
         Collection<String> processes = config.getProcessNames();
         for (String name : processes)
         {
             ContextHelper.validateElement(context, name);
+        }
+        return result;
+    }
+
+    /**
+     * Add a list of validation errors.
+     *
+     * @param errorList the list of validation errors
+     */
+    public void addValidationErrors(List<ValidationError> errorList)
+    {
+        if (errorList != null)
+        {
+            this.result.addErrors(errorList);
         }
     }
 

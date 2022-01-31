@@ -17,6 +17,8 @@
 
 package org.apache.pdfbox.util;
 
+import java.util.Base64;
+
 /**
  * Utility functions for hex encoding.
  *
@@ -40,5 +42,19 @@ public final class Hex
     public static byte[] getBytes(byte b)
     {
         return getString(b).getBytes(Charsets.US_ASCII);
+    }
+
+    /**
+     * Decode a base64 String.
+     *
+     * @param base64Value a base64 encoded String.
+     *
+     * @return the decoded String as a byte array.
+     *
+     * @throws IllegalArgumentException if this isn't a base64 encoded string.
+     */
+    public static byte[] decodeBase64(String base64Value)
+    {
+        return Base64.getDecoder().decode(base64Value.replaceAll("\\s", ""));
     }
 }

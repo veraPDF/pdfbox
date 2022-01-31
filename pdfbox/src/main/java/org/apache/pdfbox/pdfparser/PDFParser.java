@@ -240,18 +240,32 @@ public class PDFParser extends COSParser
     }
 
     /**
-     * This will parse the stream and populate the COSDocument object.  This will close
-     * the stream when it is done parsing.
+     * This will parse the stream and populate the PDDocument object. This will close the keystore stream when it is
+     * done parsing. Lenient mode is active by default.
      *
-     * @throws IOException If there is an error reading from the stream or corrupt data
-     * is found.
+     * @throws InvalidPasswordException If the password is incorrect.
+     * @throws IOException If there is an error reading from the stream or corrupt data is found.
      */
-    public void parse() throws IOException
+    public PDDocument parse() throws IOException
     {
-         // set to false if all is processed
-         boolean exceptionOccurred = true; 
-         try
-         {
+        return parse(true);
+    }
+
+    /**
+     * This will parse the stream and populate the PDDocument object. This will close the keystore stream when it is
+     * done parsing.
+     *
+     * @param lenient activate leniency if set to true
+     * @throws InvalidPasswordException If the password is incorrect.
+     * @throws IOException If there is an error reading from the stream or corrupt data is found.
+     */
+    public PDDocument parse(boolean lenient) throws IOException
+    {
+        setLenient(lenient);
+        // set to false if all is processed
+        boolean exceptionOccurred = true;
+        try
+        {
             // PDFBOX-1922 read the version header and rewind
             if (!parsePDFHeader() && !parseFDFHeader())
             {
@@ -263,11 +277,12 @@ public class PDFParser extends COSParser
                 initialParse();
             }
             exceptionOccurred = false;
+            PDDocument pdDocument = createDocument();
+            pdDocument.setEncryptionDictionary(getEncryption());
+            return pdDocument;
         }
         finally
         {
-            IOUtils.closeQuietly(keyStoreInputStream);
-    
             if (exceptionOccurred && document != null)
             {
                 IOUtils.closeQuietly(document);
@@ -275,6 +290,18 @@ public class PDFParser extends COSParser
             }
         }
     }
+
+    /**
+     * Create the resulting document. Maybe overwritten if the parser uses another class as document.
+     *
+     * @return the resulting document
+     * @throws IOException if the method is called before parsing the document
+     */
+    protected PDDocument createDocument() throws IOException
+    {
+        return new PDDocument(document, pdfSource, getAccessPermission());
+    }
+
 
     /**
      * Prepare for decryption.

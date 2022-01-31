@@ -26,8 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.activation.DataSource;
-
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.pdfparser.XrefTrailerResolver;
 import org.apache.pdfbox.preflight.ValidationResult.ValidationError;
@@ -47,11 +45,6 @@ public class PreflightContext implements Closeable
      * The PDFbox object representation of the PDF source.
      */
     private PreflightDocument document = null;
-
-    /**
-     * The datasource to load the document from
-     */
-    private DataSource source = null;
 
     /**
      * Contains all Xref/trailer objects and resolves them into single object using startxref reference.
@@ -78,20 +71,19 @@ public class PreflightContext implements Closeable
     private PreflightPath validationPath = new PreflightPath();
 
     private Integer currentPageNumber = null;
+
+    private long fileLen;
     
     /**
      * Create the DocumentHandler using the DataSource which represent the PDF file to check.
-     * 
-     * @param source
      */
-    public PreflightContext(DataSource source)
+    public PreflightContext()
     {
-        this.source = source;
+        this.config = null;
     }
 
-    public PreflightContext(DataSource source, PreflightConfiguration configuration)
+    public PreflightContext(PreflightConfiguration configuration)
     {
-        this.source = source;
         this.config = configuration;
     }
 
@@ -130,6 +122,16 @@ public class PreflightContext implements Closeable
         this.xrefTrailerResolver = xrefTrailerResolver;
     }
 
+    public void setFileLen(long fileLen)
+    {
+        this.fileLen = fileLen;
+    }
+
+    public long getFileLen()
+    {
+        return fileLen;
+    }
+
     /**
      * Initialize the PDFBox object which present the PDF File.
      * 
@@ -138,20 +140,6 @@ public class PreflightContext implements Closeable
     public void setDocument(PreflightDocument document)
     {
         this.document = document;
-    }
-
-    /**
-     * 
-     * @return The datasource of the pdf document
-     */
-    public DataSource getSource()
-    {
-        return source;
-    }
-
-    public boolean isComplete()
-    {
-        return (document != null) && (source != null);
     }
 
     /**

@@ -24,6 +24,8 @@ package org.apache.xmpbox;
 import static org.junit.Assert.assertEquals;
 
 import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 
 import org.junit.Test;
@@ -47,33 +49,65 @@ public class DateConverterTest
     public void testDateConversion() throws Exception
     {
 
-        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-        Calendar jaxbCal = null,
-                convDate = null;
         // Test partial dates
-        convDate = DateConverter.toCalendar("2015-02-02");
+        Calendar convDate = DateConverter.toCalendar("2015-02-02");
         assertEquals(2015, convDate.get(Calendar.YEAR));
-        
+
+        //Test missing seconds
+        assertEquals(DateConverter.toCalendar("2015-12-08T12:07:00-05:00"),
+                DateConverter.toCalendar("2015-12-08T12:07-05:00"));
+        assertEquals(DateConverter.toCalendar("2011-11-20T10:09:00Z"),
+                DateConverter.toCalendar("2011-11-20T10:09Z"));
+
         // Test some time zone offsets
-        jaxbCal = javax.xml.bind.DatatypeConverter.parseDateTime("2015-02-02T16:37:19.192Z");
-        convDate = DateConverter.toCalendar("2015-02-02T16:37:19.192Z");
-        assertEquals(dateFormat.format(jaxbCal.getTime()), dateFormat.format(convDate.getTime()));
+        String testString1 = "";
+        String testString2 = "";
 
-        jaxbCal = javax.xml.bind.DatatypeConverter.parseDateTime("2015-02-02T16:37:19.192+00:00");
-        convDate = DateConverter.toCalendar("2015-02-02T16:37:19.192Z");
-        assertEquals(dateFormat.format(jaxbCal.getTime()), dateFormat.format(convDate.getTime()));
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm[:ss][.SSS][XXX]");
 
-        jaxbCal = javax.xml.bind.DatatypeConverter.parseDateTime("2015-02-02T16:37:19.192+02:00");
-        convDate = DateConverter.toCalendar("2015-02-02T16:37:19.192+02:00");
-        assertEquals(dateFormat.format(jaxbCal.getTime()), dateFormat.format(convDate.getTime()));
+        //Test missing seconds
+        testString1 = "2015-12-08T12:07:00-05:00";
+        testString2 = "2015-12-08T12:07-05:00";
 
-        jaxbCal = javax.xml.bind.DatatypeConverter.parseDateTime("2015-02-02T16:37:19.192Z");
-        convDate = DateConverter.toCalendar("2015-02-02T08:37:19.192PST");
-        assertEquals(dateFormat.format(jaxbCal.getTime()), dateFormat.format(convDate.getTime()));
+        assertEquals(DateConverter.toCalendar(testString1), DateConverter.toCalendar(testString2));
+        assertEquals(DateConverter.toCalendar(testString1).toInstant(),ZonedDateTime.parse(testString1, dateTimeFormatter).toInstant());
+        assertEquals(DateConverter.toCalendar(testString2).toInstant(),ZonedDateTime.parse(testString2, dateTimeFormatter).toInstant());
 
-        jaxbCal = javax.xml.bind.DatatypeConverter.parseDateTime("2015-02-02T16:37:19.192+01:00");
-        convDate = DateConverter.toCalendar("2015-02-02T16:37:19.192Europe/Berlin");
-        assertEquals(dateFormat.format(jaxbCal.getTime()), dateFormat.format(convDate.getTime()));
+        // Test some time zone offsets
+        testString1 = "2015-02-02T16:37:19.192Z";
+        testString2 = "2015-02-02T16:37:19.192Z";
+
+        assertEquals(DateConverter.toCalendar(testString2).toInstant(),ZonedDateTime.parse(testString1, dateTimeFormatter).toInstant());
+
+        testString1 = "2015-02-02T16:37:19.192+00:00";
+        testString2 = "2015-02-02T16:37:19.192Z";
+
+        assertEquals(DateConverter.toCalendar(testString2).toInstant(),ZonedDateTime.parse(testString1, dateTimeFormatter).toInstant());
+
+        testString1 = "2015-02-02T16:37:19.192+02:00";
+        testString2 = "2015-02-02T16:37:19.192+02:00";
+
+        assertEquals(DateConverter.toCalendar(testString2).toInstant(),ZonedDateTime.parse(testString1, dateTimeFormatter).toInstant());
+
+        testString1 = "2015-02-02T16:37:19.192Z";
+        testString2 = "2015-02-02T08:37:19.192PST";
+
+        assertEquals(DateConverter.toCalendar(testString2).toInstant(),ZonedDateTime.parse(testString1, dateTimeFormatter).toInstant());
+
+        testString1 = "2015-02-02T16:37:19.192+01:00";
+        testString2 = "2015-02-02T16:37:19.192Europe/Berlin";
+
+        assertEquals(DateConverter.toCalendar(testString2).toInstant(),ZonedDateTime.parse(testString1, dateTimeFormatter).toInstant());
+
+        // PDFBOX-4902: half-hour TZ
+        testString1 = "2015-02-02T16:37:19.192+05:30";
+        assertEquals(DateConverter.toCalendar(testString1).toInstant(),ZonedDateTime.parse(testString1, dateTimeFormatter).toInstant());
+
+        testString1 = "2015-02-02T16:37:19.192-05:30";
+        assertEquals(DateConverter.toCalendar(testString1).toInstant(),ZonedDateTime.parse(testString1, dateTimeFormatter).toInstant());
+
+        testString1 = "2015-02-02T16:37:19.192+10:30";
+        assertEquals(DateConverter.toCalendar(testString1).toInstant(),ZonedDateTime.parse(testString1, dateTimeFormatter).toInstant());
     }
     
     /**
