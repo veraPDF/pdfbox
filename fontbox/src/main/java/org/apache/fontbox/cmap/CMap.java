@@ -60,6 +60,14 @@ public class CMap
     {
     }
 
+    public List<CIDRange> getCodeToCidRanges() {
+        return codeToCidRanges;
+    }
+
+    public Map<Integer, Integer> getCodeToCid() {
+        return codeToCid;
+    }
+
     /**
      * This will tell if this cmap has any CID mappings.
      * 
@@ -247,7 +255,7 @@ public class CMap
      */
     void addCIDMapping(int code, int cid)
     {
-        codeToCid.put(cid, code);
+        codeToCid.put(code, cid);
     }
 
     /**
