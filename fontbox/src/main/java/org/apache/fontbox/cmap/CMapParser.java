@@ -314,7 +314,7 @@ public class CMapParser
                 while (mappedCID <= endOfMappings)
                 {
                     int mappedCode = createIntFromBytes(startCode);
-                    result.addCIDMapping(mappedCode++, mappedCID);
+                    result.addCIDMapping(mappedCode, mappedCID++);
                     increment(startCode);
                 }
             }
