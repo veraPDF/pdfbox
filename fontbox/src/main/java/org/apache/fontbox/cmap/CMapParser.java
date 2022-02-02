@@ -302,18 +302,18 @@ public class CMapParser
             int start = createIntFromBytes(startCode);
             byte[] endCode = (byte[]) parseNextToken(cmapStream);
             int end = createIntFromBytes(endCode);
-            int mappedCode = (Integer) parseNextToken(cmapStream);
+            int mappedCID = (Integer) parseNextToken(cmapStream);
             if (startCode.length <= 2 && endCode.length <= 2)
             {
-                result.addCIDRange((char) start, (char) end, mappedCode);
+                result.addCIDRange((char) start, (char) end, mappedCID);
             }
             else
             {
                 // TODO Is this even possible?
-                int endOfMappings = mappedCode + end - start;
-                while (mappedCode <= endOfMappings)
+                int endOfMappings = mappedCID + end - start;
+                while (mappedCID <= endOfMappings)
                 {
-                    int mappedCID = createIntFromBytes(startCode);
+                    int mappedCode = createIntFromBytes(startCode);
                     result.addCIDMapping(mappedCode++, mappedCID);
                     increment(startCode);
                 }
@@ -337,8 +337,8 @@ public class CMapParser
                 break;
             }
             byte[] inputCode = (byte[]) nextToken;
-            int mappedCode = (Integer) parseNextToken(cmapStream);
-            int mappedCID = createIntFromBytes(inputCode);
+            int mappedCID = (Integer) parseNextToken(cmapStream);
+            int mappedCode = createIntFromBytes(inputCode);
             result.addCIDMapping(mappedCode, mappedCID);
         }
     }
