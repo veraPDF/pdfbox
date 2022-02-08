@@ -304,7 +304,7 @@ class Type1Lexer
             }
         }
         
-        buffer.position(buffer.position() - 1);
+        ((Buffer)buffer).position(buffer.position() - 1);
         if (radix != null)
         {
             Integer val = Integer.parseInt(sb.toString(), Integer.parseInt(radix.toString()));
