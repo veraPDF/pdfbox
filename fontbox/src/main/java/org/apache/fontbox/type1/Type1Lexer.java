@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 /**
@@ -154,7 +155,7 @@ class Type1Lexer
                 }
                 else
                 {
-                    buffer.position(buffer.position() -1);
+                    ((Buffer)buffer).position(buffer.position() -1);
 
                     // regular character: try parse as number
                     Token number = tryReadNumber();
@@ -201,7 +202,7 @@ class Type1Lexer
      */
     private Token tryReadNumber()
     {
-        buffer.mark();
+        ((Buffer)buffer).mark();
 
         StringBuilder sb = new StringBuilder();
         StringBuilder radix = null;
@@ -239,13 +240,13 @@ class Type1Lexer
         else if (sb.length() == 0 || !hasDigit)
         {
             // failure
-            buffer.reset();
+            ((Buffer)buffer).reset();
             return null;
         }
         else
         {
             // integer
-            buffer.position(buffer.position() -1);
+            ((Buffer)buffer).position(buffer.position() -1);
             return new Token(sb.toString(), Token.INTEGER);
         }
 
@@ -258,7 +259,7 @@ class Type1Lexer
         else
         {
             // failure
-            buffer.reset();
+            ((Buffer)buffer).reset();
             return null;
         }
 
@@ -291,7 +292,7 @@ class Type1Lexer
             else
             {
                 // failure
-                buffer.reset();
+                ((Buffer)buffer).reset();
                 return null;
             }
 
@@ -321,7 +322,7 @@ class Type1Lexer
         StringBuilder sb = new StringBuilder();
         while (buffer.hasRemaining())
         {
-            buffer.mark();
+            ((Buffer)buffer).mark();
             char c = getChar();
             if (Character.isWhitespace(c) ||
                 c == '(' || c == ')' ||
@@ -330,7 +331,7 @@ class Type1Lexer
                 c == '{' || c == '}' ||
                 c == '/' || c == '%' )
             {
-                buffer.reset();
+                ((Buffer)buffer).reset();
                 break;
             }
             else
