@@ -373,14 +373,26 @@ final class FileSystemFontProvider extends FontProvider
         try
         {
             // todo JH: we don't yet support loading CFF fonts from OTC collections 
-            OTFParser parser = new OTFParser(false, true);
-            OpenTypeFont otf = parser.parse(file);
-
-            if (LOG.isDebugEnabled())
+            if (file.getName().toLowerCase().endsWith(".ttc"))
             {
-                LOG.debug("Loaded " + postScriptName + " from " + file);
+                TrueTypeCollection ttc = new TrueTypeCollection(file);
+                for (TrueTypeFont otf : ttc.getFonts())
+                {
+                    if (otf.getName().equals(postScriptName))
+                    {
+                        return (OpenTypeFont) otf;
+                    }
+                }
+                throw new IOException("Font " + postScriptName + " not found in " + file);
+            } else {
+                OTFParser parser = new OTFParser(false, true);
+                OpenTypeFont otf = parser.parse(file);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Loaded " + postScriptName + " from " + file);
+                }
+                return otf;
             }
-            return otf;
         }
         catch (IOException e)
         {
