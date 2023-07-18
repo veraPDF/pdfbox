@@ -701,6 +701,10 @@ public class CMapParser
         {
             retval = new String(bytes, "ISO-8859-1");
         }
+        else if (bytes.length == 2 && bytes[0] == (byte) 0xFF && bytes[1] == (byte) 0xFE)
+        {
+            retval = "\uFFFE";
+        }
         else
         {
             retval = new String(bytes, "UTF-16BE");
