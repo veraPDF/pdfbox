@@ -278,7 +278,9 @@ public class XmpSerializer
      */
     private void save(Node doc, OutputStream outStream, String encoding) throws TransformerException
     {
-        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        transformerFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        Transformer transformer = transformerFactory.newTransformer();
         // human readable
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
         // indent elements
