@@ -143,14 +143,12 @@ public class PDPage implements COSObjectable, PDContentStream
     }
 
     public PDResources getPageResources() {
-        if (pageResources == null) {
-            COSDictionary value = (COSDictionary) page.getDictionaryObject(COSName.RESOURCES);
-            if (value != null) {
-                return new PDResources(value);
-            }
+        COSDictionary value = (COSDictionary) page.getDictionaryObject(COSName.RESOURCES);
+        if (value != null) {
+            return new PDResources(value);
         }
 
-        return pageResources;
+        return null;
     }
 
     public PDResources getInheritedResources() {
