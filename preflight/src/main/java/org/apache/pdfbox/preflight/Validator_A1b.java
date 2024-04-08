@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
@@ -94,7 +95,9 @@ public class Validator_A1b
             }
             else
             {
-                Transformer transformer = TransformerFactory.newInstance().newTransformer();
+                TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                transformerFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+                Transformer transformer = transformerFactory.newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes");
                 transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
                 XmlResultParser xrp = new XmlResultParser();
@@ -140,7 +143,9 @@ public class Validator_A1b
                 Element result = xrp.validate(new File(args[posFile]));
                 Document document = result.getOwnerDocument();
                 document.appendChild(result);
-                Transformer transformer = TransformerFactory.newInstance().newTransformer();
+                TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                transformerFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+                Transformer transformer = transformerFactory.newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes");
                 transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
                 transformer.transform(new DOMSource(document), new StreamResult(System.out));
